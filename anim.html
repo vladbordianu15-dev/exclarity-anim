@@ -293,7 +293,7 @@
       z-index: 2;
     }
 
-    /* updated: fade-in instruction text after animation finishes */
+    /* instruction text fades in AFTER completion */
     .small{
       font-size: 12px;
       color: rgba(235,238,245,0.68);
@@ -337,12 +337,31 @@
       p{ font-size: 12.4px; }
       .label{ font-size: 12.4px; }
     }
+
+    /* -------------------------
+       COMPLETED VISUAL STATE
+       ------------------------- */
+    .card.completed .scanline{
+      display:none;
+    }
+    .card.completed .dot{
+      animation:none;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.35);
+    }
+    .card.completed .spark{
+      animation:none;
+      opacity: 1;
+      background: rgba(34,197,94,0.85);
+    }
+    .card.completed .chip{
+      opacity: 1;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="card">
+    <div class="card" id="card">
       <div class="glow"></div>
       <div class="grain"></div>
       <div class="scanline"></div>
@@ -379,7 +398,7 @@
     // title, desc
     // s1..s4 labels
     // v1..v4 values (0-100)
-    // duration (ms) optional (controls stagger spacing only)
+    // duration (ms) optional
     // -------------------------
     const q = new URLSearchParams(window.location.search);
 
@@ -388,7 +407,6 @@
     document.getElementById("title").textContent = title;
     document.getElementById("desc").textContent  = desc;
 
-    // defaults (consumer-safe, professional, non-judgmental)
     const labels = [
       q.get("s1") || "Emotional Intensity",
       q.get("s2") || "Rumination Loop",
@@ -396,7 +414,6 @@
       q.get("s4") || "Emotional Reactivity"
     ];
 
-    // default values are tasteful (numbers are NOT shown)
     const values = [
       clamp(parseInt(q.get("v1") || "76", 10)),
       clamp(parseInt(q.get("v2") || "68", 10)),
@@ -422,6 +439,16 @@
       return "Low";
     }
 
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    const card = document.getElementById("card");
     const grid = document.getElementById("grid");
 
     // Build metrics
@@ -439,10 +466,10 @@
       grid.appendChild(el);
     });
 
-    // Animate fills (staggered)
     const fills = Array.from(document.querySelectorAll(".fill"));
     const metrics = Array.from(document.querySelectorAll(".metric"));
 
+    // Animate fills (staggered)
     const delays = baseDelay
       ? [0, baseDelay * 0.18, baseDelay * 0.36, baseDelay * 0.54]
       : [120, 280, 440, 600];
@@ -453,48 +480,53 @@
       });
     }, 40);
 
-    // Cycle highlight for “calibrating” feel
+    // Active looping animations (we will STOP these on completion)
     let hi = 0;
-    setInterval(() => {
+    const metricInterval = setInterval(() => {
       metrics.forEach(m => m.classList.remove("on"));
       metrics[hi % metrics.length].classList.add("on");
       hi++;
     }, 520);
 
-    // Cycle chip highlight
     const chips = Array.from(document.querySelectorAll(".chip"));
     let ci = 0;
-    setInterval(() => {
+    const chipInterval = setInterval(() => {
       chips.forEach(c => c.classList.remove("on"));
       chips[ci % chips.length].classList.add("on");
       ci++;
     }, 560);
 
-    // Status text rotate
     const status = document.getElementById("statusText");
     const statuses = ["Calibrating", "Analyzing", "Mapping", "Finalizing"];
     let si = 0;
-    setInterval(() => {
+    const statusInterval = setInterval(() => {
       si++;
       status.textContent = statuses[si % statuses.length];
     }, 900);
 
-    // ✅ show instruction text after animation completes (you already have Next button below)
+    // ✅ Completion moment: stop the "still working" feel and lock into READY state
     // tweak time if you want: 3200 faster, 4000 slower
     setTimeout(() => {
+      // Stop loops
+      clearInterval(metricInterval);
+      clearInterval(chipInterval);
+      clearInterval(statusInterval);
+
+      // Lock visual state
+      card.classList.add("completed");
+      metrics.forEach(m => m.classList.add("on"));
+
+      // Make sure fills are fully set (in case of slow device)
+      fills.forEach(f => { f.style.width = (f.dataset.v || 60) + "%"; });
+
+      // Set status to Ready
+      status.textContent = "Ready";
+
+      // Show instruction text
       const note = document.getElementById("footNote");
       note.textContent = "Emotional signal mapping is complete. Click “Next” to continue.";
       note.classList.add("show");
     }, 3600);
-
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
   </script>
 </body>
 </html>
