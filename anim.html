@@ -293,9 +293,15 @@
       z-index: 2;
     }
 
+    /* updated: fade-in instruction text after animation finishes */
     .small{
       font-size: 12px;
       color: rgba(235,238,245,0.68);
+      opacity: 0;
+      transition: opacity .4s ease;
+    }
+    .small.show{
+      opacity: 1;
     }
 
     .checks{
@@ -324,7 +330,6 @@
       color: rgba(235,238,245,0.92);
     }
 
-    /* tighten on small screens */
     @media (max-width: 520px){
       .card{ padding: 14px; border-radius: 16px; }
       .badge{ font-size: 11.5px; padding: 7px 9px; }
@@ -354,9 +359,7 @@
         </div>
       </div>
 
-      <div class="grid" id="grid">
-        <!-- metrics injected by JS -->
-      </div>
+      <div class="grid" id="grid"></div>
 
       <div class="footer">
         <div class="small" id="footNote">Signals identified. Preparing the next section…</div>
@@ -376,7 +379,7 @@
     // title, desc
     // s1..s4 labels
     // v1..v4 values (0-100)
-    // duration (ms) optional
+    // duration (ms) optional (controls stagger spacing only)
     // -------------------------
     const q = new URLSearchParams(window.location.search);
 
@@ -385,15 +388,15 @@
     document.getElementById("title").textContent = title;
     document.getElementById("desc").textContent  = desc;
 
-    // default professional labels (no therapy/diagnosis claims)
+    // defaults (consumer-safe, professional, non-judgmental)
     const labels = [
       q.get("s1") || "Emotional Intensity",
       q.get("s2") || "Rumination Loop",
       q.get("s3") || "Attachment Sensitivity",
-      q.get("s4") || "Emotional Volatility"
+      q.get("s4") || "Emotional Reactivity"
     ];
 
-    // default values are tasteful (not “perfect math”), no numbers shown
+    // default values are tasteful (numbers are NOT shown)
     const values = [
       clamp(parseInt(q.get("v1") || "76", 10)),
       clamp(parseInt(q.get("v2") || "68", 10)),
@@ -401,8 +404,7 @@
       clamp(parseInt(q.get("v4") || "54", 10))
     ];
 
-    // optional: custom pacing (ms)
-    const baseDelay = clampMs(parseInt(q.get("duration") || "0", 10)); // if 0, use defaults
+    const baseDelay = clampMs(parseInt(q.get("duration") || "0", 10)); // optional
 
     function clamp(n){
       if (Number.isNaN(n)) return 60;
@@ -414,7 +416,6 @@
     }
 
     function levelText(v){
-      // intentionally vague, premium, believable
       if (v >= 78) return "High";
       if (v >= 62) return "Elevated";
       if (v >= 45) return "Moderate";
@@ -477,6 +478,14 @@
       si++;
       status.textContent = statuses[si % statuses.length];
     }, 900);
+
+    // ✅ show instruction text after animation completes (you already have Next button below)
+    // tweak time if you want: 3200 faster, 4000 slower
+    setTimeout(() => {
+      const note = document.getElementById("footNote");
+      note.textContent = "Emotional signal mapping is complete. Click “Next” to continue.";
+      note.classList.add("show");
+    }, 3600);
 
     function escapeHtml(str){
       return String(str)
